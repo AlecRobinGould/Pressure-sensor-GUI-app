@@ -1,0 +1,21 @@
+# Ignore all files by default
+*
+
+# Allow Python files in /gui and /utils directories
+!/gui/
+!/gui/*.py
+!/utils/
+!/utils/*.py
+
+# Allow main.py in the root directory
+!main.py
+
+# Allow specific files
+!LUT of gauge tubes.csv
+!settings.ini
+!dependencies.txt
+
+# Allow the Logs folder but not its contents
+!Logs/
+Logs/*
+!.gitkeep
