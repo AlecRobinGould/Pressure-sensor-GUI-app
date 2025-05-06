@@ -4,12 +4,13 @@ from threading import Lock
 import time
 
 class StatusTab:
-    def __init__(self, notebook, root, ser_manager, update_active, heartbeat_active, logging_var):
+    def __init__(self, notebook, root, ser_manager, update_active, heartbeat_active, logging_var, sensor_tab):
         self.root = root
         self.ser_manager = ser_manager
         self.update_active = update_active
         self.heartbeat_active = heartbeat_active
         self.logging_var = logging_var
+        self.sensor_tab = sensor_tab  # Store the sensor_tab instance
         self.serial_lock = Lock()
 
         # Create the tab
@@ -70,6 +71,10 @@ class StatusTab:
             # Stop heartbeat before starting the test
             self.heartbeat_active.set(False)
             print("Stopping heartbeat...")
+            # Clear the graph only if data has been plotted from a file
+            if self.sensor_tab.data_plotted:
+                self.sensor_tab.clear_all_plots()
+
             confirm = False
             timeout = 2  # Timeout in seconds
             start_time = time.time()

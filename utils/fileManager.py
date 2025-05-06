@@ -23,9 +23,9 @@ class FileManager:
         else:
             config.read('settings.ini')
 
-        # Generate an incremented log filename
-        base_name = config['Settings']['csv_filename'].split('.')[0]
-        self.filename_var.set(self.get_incremented_log_filename(base_name=base_name, extension='.csv'))
+        # Use the filename from settings.ini but prepend the Logs folder
+        base_filename = config['Settings']['csv_filename']
+        self.filename_var.set(self.get_incremented_log_filename(base_filename))
 
     def save_settings(self, logging_enabled):
         """
@@ -33,7 +33,7 @@ class FileManager:
         """
         config = configparser.ConfigParser()
         config['Settings'] = {
-            'csv_filename': self.filename_var.get(),
+            'csv_filename': self.filename_var.get(),  # Keep the current filename
             'logging_enabled': str(logging_enabled)
         }
         with open('settings.ini', 'w') as configfile:
@@ -52,18 +52,48 @@ class FileManager:
                 writer = csv.writer(file)
                 writer.writerow(data)
 
-    def get_incremented_log_filename(self, base_name="log", extension=".csv", folder="Logs"):
+    def get_incremented_log_filename(self, base_filename, folder="Logs"):
         """
-        Generate a unique log filename by incrementing the filename if it already exists.
+        Generate a unique log filename by incrementing the number in the filename.
+        If the file exists and is empty, or if the file does not exist, do not increment.
         """
+        # Ensure the folder exists
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        file_path = os.path.join(folder, f"{base_name}{extension}")
-        counter = 1
+        # Check if the folder is already part of the filename
+        if base_filename.startswith(folder + os.sep):
+            base_filename = base_filename[len(folder) + 1:]  # Remove the folder prefix
 
-        while os.path.exists(file_path):
-            file_path = os.path.join(folder, f"{base_name}_{counter}{extension}")
-            counter += 1
+        # Extract the base name and number
+        base_name, extension = os.path.splitext(base_filename)
+        if "_" in base_name and base_name.split("_")[-1].isdigit():
+            name_part = "_".join(base_name.split("_")[:-1])
+            number = int(base_name.split("_")[-1])
+        else:
+            name_part = base_name
+            number = 0
+
+        # Construct the full file path
+        current_filename = f"{name_part}_{number}{extension}"
+        file_path = os.path.join(folder, current_filename)
+
+        # Check if the file exists and is empty
+        if os.path.exists(file_path):
+            if os.path.getsize(file_path) == 0:  # File exists but is empty
+                return file_path  # Return the current filename without incrementing
+        else:
+            return file_path  # File does not exist, return the current filename
+
+        # Increment the number if the file exists and is not empty
+        number += 1
+        new_filename = f"{name_part}_{number}{extension}"
+        file_path = os.path.join(folder, new_filename)
+
+        # Ensure the filename is unique
+        while os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+            number += 1
+            new_filename = f"{name_part}_{number}{extension}"
+            file_path = os.path.join(folder, new_filename)
 
         return file_path
