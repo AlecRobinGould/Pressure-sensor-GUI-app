@@ -1,9 +1,12 @@
 import serial
 import serial.tools.list_ports
+import threading
 
 class SerialManager:
     def __init__(self):
         self.ser = None
+        self.serial_lock = threading.Lock()  # Add a threading lock for thread-safe access
+
 
     def find_com_port(self):
         """
@@ -35,7 +38,16 @@ class SerialManager:
             response = self.ser.readline().decode('utf-8').strip()
             if response == "ACK":
                 print("Handshake successful!")
-                return True
+
+                # Read the error status sent by the microcontroller
+                error_status_format = self.ser.readline().decode('utf-8').strip()
+                if "Error status format" in error_status_format:
+                    error_status = self.ser.readline().decode('utf-8').strip()
+                    print(f"Initial Error Status: {error_status}")
+                    return error_status.split(", ")  # Return the parsed error status as a list
+                else:
+                    print("No error status received after handshake.")
+                    return ["N/A", "N/A", "N/A", "N/A"]  # Default to "N/A" if no error status is received
             else:
                 print("Handshake failed!")
                 self.ser.close()

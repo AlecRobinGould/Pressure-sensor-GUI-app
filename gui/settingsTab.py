@@ -1,36 +1,50 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
+import customtkinter as ctk
+from tkinter import messagebox, filedialog
 
-class SettingsTab:
-    def __init__(self, notebook, file_manager, logging_var, sensor_tab):
+
+class SettingsTab(ctk.CTkFrame):
+    def __init__(self, parent, file_manager, logging_var, sensor_tab):
+        super().__init__(parent)
+
         self.file_manager = file_manager
         self.logging_var = logging_var
-        self.sensor_tab = sensor_tab  # Store the sensor_tab instance
+        self.sensor_tab = sensor_tab
 
-        # Create the tab
-        self.tab = ttk.Frame(notebook)
-        notebook.add(self.tab, text="Settings")
+        # Configure grid layout for the entire tab
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
-        # Filename label and entry
-        ttk.Label(self.tab, text="CSV Filename:").pack(pady=5)
-        self.filename_entry = ttk.Entry(self.tab, textvariable=self.file_manager.filename_var, width=40)
-        self.filename_entry.pack(pady=5)
+        # Create a frame to center all content
+        content_frame = ctk.CTkFrame(self)
+        content_frame.grid(row=0, column=0, padx=480, pady=20, sticky="nsew")
+        content_frame.grid_columnconfigure(0, weight=1)
+        content_frame.grid_rowconfigure(0, weight=1)
 
-        # Logging checkbox
-        self.logging_checkbox = ttk.Checkbutton(self.tab, text="Enable Data Logging", variable=self.logging_var)
-        self.logging_checkbox.pack(pady=5)
+        # Create widgets
+        self.filename_label = ctk.CTkLabel(content_frame, text="CSV Filename:", font=ctk.CTkFont(size=14))
+        self.filename_label.grid(row=0, column=0, padx=20, pady=10, sticky="n")
 
-        # Save settings button
-        save_button = ttk.Button(self.tab, text="Save Settings", command=self.save_settings)
-        save_button.pack(pady=10)
+        self.filename_entry = ctk.CTkEntry(content_frame, placeholder_text="Enter filename", textvariable=self.file_manager.filename_var)
+        self.filename_entry.grid(row=1, column=0, padx=20, pady=10, sticky="n")
 
-        # Clear plot button
-        clear_plot_button = ttk.Button(self.tab, text="Clear Plot", command=self.clear_plot)
-        clear_plot_button.pack(pady=5)
+        self.logging_checkbox = ctk.CTkCheckBox(content_frame, text="Enable Data Logging", variable=self.logging_var)
+        self.logging_checkbox.grid(row=2, column=0, padx=20, pady=10, sticky="n")
 
-        # Plot button
-        plot_button = ttk.Button(self.tab, text="Plot", command=self.plot_data)
-        plot_button.pack(pady=5)
+        self.save_button = ctk.CTkButton(content_frame, text="Save Settings", command=self.save_settings)
+        self.save_button.grid(row=3, column=0, padx=20, pady=10, sticky="n")
+
+        self.clear_plot_button = ctk.CTkButton(content_frame, text="Clear Plot", command=self.clear_plot)
+        self.clear_plot_button.grid(row=4, column=0, padx=20, pady=10, sticky="n")
+
+        self.plot_button = ctk.CTkButton(content_frame, text="Plot Data", command=self.plot_data)
+        self.plot_button.grid(row=5, column=0, padx=20, pady=10, sticky="n")
+
+        self.theme_label = ctk.CTkLabel(content_frame, text="Appearance Mode:", font=ctk.CTkFont(size=14))
+        self.theme_label.grid(row=6, column=0, padx=20, pady=(20, 5), sticky="n")
+
+        self.theme_option_menu = ctk.CTkOptionMenu(content_frame, values=["Light", "Dark", "System"], command=self.change_theme)
+        self.theme_option_menu.set("Dark")  # Default to dark mode
+        self.theme_option_menu.grid(row=7, column=0, padx=20, pady=10, sticky="n")
 
     def save_settings(self):
         """
@@ -43,16 +57,30 @@ class SettingsTab:
         """
         Clear all points from the plots.
         """
-        self.sensor_tab.clear_all_plots()  # Use the sensor_tab instance directly
+        self.sensor_tab.clear_all_plots()
         messagebox.showinfo("Clear Plot", "All plots have been cleared!")
 
     def plot_data(self):
         """
-        Plot data from the file specified in the CSV filename textbox.
+        Open file explorer to select a data file and plot the data.
         """
-        filename = self.file_manager.filename_var.get()
-        try:
-            self.sensor_tab.plot_from_file(filename)  # Use the sensor_tab instance directly
-            messagebox.showinfo("Plot Data", f"Data from {filename} has been plotted!")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to plot data: {e}")
+        # Open file explorer dialog
+        filename = filedialog.askopenfilename(
+            initialdir="Logs",  # Default directory
+            title="Select Data File",
+            filetypes=(("CSV Files", "*.csv"), ("All Files", "*.*"))
+        )
+
+        if filename:  # If a file is selected
+            try:
+                self.sensor_tab.plot_from_file(filename)
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to plot data: {e}")
+        else:
+            messagebox.showinfo("Plot Data", "No file selected.")
+
+    def change_theme(self, new_theme):
+        """
+        Change the appearance mode of the application.
+        """
+        ctk.set_appearance_mode(new_theme)
