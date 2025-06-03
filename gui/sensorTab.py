@@ -424,7 +424,7 @@ class SensorTab(ctk.CTkFrame):
     
     def process_serial_data(self, raw_data, logging_var, file_manager):
         """
-        Process raw data received from the serial port and update the plots.
+        Process raw data received from the serial port and dynamically update the plots.
         """
         try:
             # Debug: Print the raw data received
@@ -449,58 +449,49 @@ class SensorTab(ctk.CTkFrame):
                 print("Warning: Pressure value is zero. Ignoring this data point.")
                 return
 
-            # Update each sensor's plot
+            # Evaluate and plot each sensor's data point
             for i in range(8):
-                self.x_data[i].append(pressure)
-                self.y_data[i].append(sensor_voltages[i])
-
-                # Separate pass and fail points
-                pass_x = []
-                pass_y = []
-                fail_x = []
-                fail_y = []
-
-                for x, y in zip(self.x_data[i], self.y_data[i]):
-                    if self.check_point_within_limits(x, y):
-                        pass_x.append(x)
-                        pass_y.append(y)
-                    else:
-                        fail_x.append(x)
-                        fail_y.append(y)
-
-                # Update the plot line without clearing the entire plot
-                line_sensor = self.tabview.tab(f"Sensor {i + 1}").line_sensor
-                line_sensor.set_data(self.x_data[i], self.y_data[i])
+                voltage = sensor_voltages[i]
                 ax = self.tabview.tab(f"Sensor {i + 1}").ax
+                line_sensor = self.tabview.tab(f"Sensor {i + 1}").line_sensor
 
-                # Preserve zoom state
-                xlim = ax.get_xlim()
-                ylim = ax.get_ylim()
+                # Update the data for the line plot
+                self.x_data[i].append(pressure)
+                self.y_data[i].append(voltage)
+                line_sensor.set_data(self.x_data[i], self.y_data[i])
 
-                # Update pass/fail points
-                if not hasattr(self, f"state_{i}") or getattr(self, f"state_{i}") != "Pass":
-                    ax.scatter(pass_x, pass_y, color="blue", marker="o")  # No label to avoid duplicate legend entries
-                    if fail_x:
-                        ax.scatter(fail_x, fail_y, color="purple", marker="o")  # No label to avoid duplicate legend entries
-                        self.pass_fail_labels[i].set_text("Fail")
-                        self.pass_fail_labels[i].set_color("red")
-                        setattr(self, f"state_{i}", "Fail")
-                    else:
+                # Check if the point passes or fails
+                if self.check_point_within_limits(pressure, voltage):
+                    # Update pass/fail labels and legend only if the state changes
+                    if not hasattr(self, f"state_{i}") or getattr(self, f"state_{i}") != "Fail":
+                        # Only update to "Pass" if the state is not already "Fail"
                         self.pass_fail_labels[i].set_text("Pass")
                         self.pass_fail_labels[i].set_color("green")
                         setattr(self, f"state_{i}", "Pass")
-
-                # Add pass/fail text back to the plot
-                ax.text(
-                    0.05, 0.95, self.pass_fail_labels[i].get_text(),
-                    color=self.pass_fail_labels[i].get_color(),
-                    fontsize=12, transform=ax.transAxes, verticalalignment="top"
-                )
+                        # Update the legend
+                        legend = ax.get_legend()
+                        if legend:
+                            legend_texts = [t.get_text() for t in legend.get_texts()]
+                            legend_texts = [t for t in legend_texts if f"Sensor {i + 1}" not in t]
+                            legend_texts.append(f"Sensor {i + 1} Pass")
+                            ax.legend(legend_texts)
+                else:
+                    # Update to "Fail" and ensure it remains
+                    self.pass_fail_labels[i].set_text("Fail")
+                    self.pass_fail_labels[i].set_color("red")
+                    setattr(self, f"state_{i}", "Fail")
+                    # Update the legend
+                    legend = ax.get_legend()
+                    if legend:
+                        legend_texts = [t.get_text() for t in legend.get_texts()]
+                        legend_texts = [t for t in legend_texts if f"Sensor {i + 1}" not in t]
+                        legend_texts.append(f"Sensor {i + 1} Fail")
+                        ax.legend(legend_texts)
 
                 # Check if pressure is <= 2.5E-5 mbar and capture Vout
                 if 0 < pressure <= 2.5E-5:  # Ensure pressure is greater than 0
                     if not hasattr(self, f"captured_voltage_{i}"):  # Capture voltage once
-                        captured_voltage = sensor_voltages[i]
+                        captured_voltage = voltage
                         setattr(self, f"captured_voltage_{i}", captured_voltage)
 
                         # Get resistor values
@@ -518,17 +509,6 @@ class SensorTab(ctk.CTkFrame):
                                 0.05, 0.85, f"Vout = {captured_voltage:.2f} mV\nOut of Range!",
                                 color="red", fontsize=10, transform=ax.transAxes, verticalalignment="top"
                             )
-
-                # Restore zoom state
-                ax.set_xlim(xlim)
-                ax.set_ylim(ylim)
-
-                # Set plot labels and legend
-                ax.set_title(f"Sensor {i + 1}: Voltage vs Pressure", fontsize=14)
-                ax.set_xlabel("Gauge Pressure [mbar]", fontsize=12)
-                ax.set_ylabel("Sensor Voltage [mV]", fontsize=12)
-                ax.set_xscale("log")
-                ax.legend()
 
                 # Redraw only the updated canvas
                 self.tabview.tab(f"Sensor {i + 1}").canvas.draw_idle()

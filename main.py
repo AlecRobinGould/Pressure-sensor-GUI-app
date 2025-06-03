@@ -32,7 +32,7 @@ class PressureSensorApp(ctk.CTk):
         self.canvas.grid(row=0, column=0, sticky="nsew")
 
         # Load and place the watermark image
-        self.add_watermark("EMSS.png")
+        # self.add_watermark("EMSS.png")
 
         # Create a frame for the main content
         self.content_frame = ctk.CTkFrame(self, fg_color="transparent")  # Transparent frame
@@ -106,22 +106,24 @@ class PressureSensorApp(ctk.CTk):
                 with self.ser_manager.serial_lock:
                     if self.ser_manager.ser.in_waiting > 0:
                         raw_data = self.ser_manager.ser.readline().decode('utf-8').strip()
+                        print(raw_data)
                         if raw_data:
                             # Check if the response contains error status
                             if "Error status format" in raw_data:
                                 # Parse the next line for error status
                                 error_status = self.ser_manager.ser.readline().decode('utf-8').strip()
+                                print(error_status)
                                 error_status_list = error_status.split(", ")
                                 self.status_tab.update_error_status(error_status_list)
                             else:
                                 # Process normal sensor data
                                 self.sensor_tab.process_serial_data(raw_data, self.logging_var, self.file_manager)
             except Exception as e:
-                # logging.error(f"Error reading serial data: {e}")
-                pass
+                print(f"Error reading serial data: {e}")
+                # pass
 
         # Schedule the next update
-        self.after(100, self.update_all_plots)
+        self.after(50, self.update_all_plots)
 
     def on_closing(self):
         """
