@@ -6,6 +6,7 @@ import tkinter as tk  # Import tkinter to use StringVar
 class FileManager:
     def __init__(self):
         self.filename_var = tk.StringVar()  # Use StringVar for filename
+        self.mode_var = tk.StringVar(value="Gauge Tube")  # Default mode
         self.load_settings()
 
     def load_settings(self):
@@ -16,12 +17,16 @@ class FileManager:
         if not os.path.exists('settings.ini'):
             config['Settings'] = {
                 'csv_filename': 'pressure_data.csv',
-                'logging_enabled': '1'
+                'logging_enabled': '1',
+                'mode': 'Gauge Tube'  # Default mode
             }
             with open('settings.ini', 'w') as configfile:
                 config.write(configfile)
         else:
             config.read('settings.ini')
+
+        # Load mode from settings.ini
+        self.mode_var.set(config['Settings'].get('mode', 'Gauge Tube'))
 
         # Use the filename from settings.ini but prepend the Logs folder
         base_filename = config['Settings']['csv_filename']
@@ -34,7 +39,8 @@ class FileManager:
         config = configparser.ConfigParser()
         config['Settings'] = {
             'csv_filename': self.filename_var.get(),  # Keep the current filename
-            'logging_enabled': str(logging_enabled)
+            'logging_enabled': str(logging_enabled),
+            'mode': self.mode_var.get()  # Save the current mode
         }
         with open('settings.ini', 'w') as configfile:
             config.write(configfile)

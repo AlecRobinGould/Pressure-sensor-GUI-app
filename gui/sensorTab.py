@@ -70,7 +70,7 @@ class SensorTab(ctk.CTkFrame):
             return df['Pressure'].tolist(), np.array(df['Average'].tolist()), lut_values#, percentage_differences
         except Exception as e:
             print(f"Error loading LUT data: {e}")
-            return [], np.array([]), [], []
+            return [], np.array([]), []
 
     def calculate_logistic_limits(self):
         """
@@ -254,27 +254,42 @@ class SensorTab(ctk.CTkFrame):
                 fontsize=12, transform=ax.transAxes, verticalalignment="top"
             )
 
+            # Check the selected mode
+            
+            
             # Check if pressure is <= 2.5E-5 mbar and capture Vout
             for pressure, voltage in zip(x_data, y_data):
                 if pressure <= 2.5E-5:
-                    if not hasattr(self, f"captured_voltage_{i}"):  # Capture voltage once
-                        captured_voltage = voltage
-                        setattr(self, f"captured_voltage_{i}", captured_voltage)
+                    mode = self.file_manager.mode_var.get()  # Get the selected mode
+                    if mode == "Gauge Tube":
+                        if not hasattr(self, f"captured_voltage_{i}"):  # Capture voltage once
+                            captured_voltage = voltage
+                            setattr(self, f"captured_voltage_{i}", captured_voltage)
 
-                        # Get resistor values
-                        resistor_values = self.get_resistor_values(captured_voltage)
-                        if resistor_values:
-                            r9, r10 = resistor_values
-                            print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} mV, R9 = {r9} ohm, R10 = {r10}")
+                            # Get resistor values
+                            resistor_values = self.get_resistor_values(captured_voltage)
+                            if resistor_values:
+                                r9, r10 = resistor_values
+                                print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} mV, R9 = {r9} ohm, R10 = {r10}")
+                                ax.text(
+                                    0.05, 0.05, f"Vout = {captured_voltage:.2f} mV\nR9 = {r9} Ω\nR10 = {r10}",
+                                    color="blue", fontsize=10, transform=ax.transAxes, verticalalignment="bottom"
+                                )
+                            else:
+                                print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} mV is out of range!")
+                                ax.text(
+                                    0.05, 0.05, f"Vout = {captured_voltage:.4f} mV\nOut of Range!",
+                                    color="red", fontsize=10, transform=ax.transAxes, verticalalignment="bottom"
+                                )
+                    elif mode == "Pressure Sensor Assembly":
+                    # Print Vout on the plot
+                        if not hasattr(self, f"captured_voltage_{i}"):  # Capture voltage once
+                            captured_voltage = (voltage/1000)*300
+                            setattr(self, f"captured_voltage_{i}", captured_voltage)
+                            print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} V")
                             ax.text(
-                                0.05, 0.85, f"Vout = {captured_voltage:.2f} mV\nR9 = {r9} Ω\nR10 = {r10}",
-                                color="blue", fontsize=10, transform=ax.transAxes, verticalalignment="top"
-                            )
-                        else:
-                            print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} mV is out of range!")
-                            ax.text(
-                                0.05, 0.85, f"Vout = {captured_voltage:.2f} mV\nOut of Range!",
-                                color="red", fontsize=10, transform=ax.transAxes, verticalalignment="top"
+                                0.05, 0.05, f"Vout = {captured_voltage:.4f} V",
+                                color="blue", fontsize=10, transform=ax.transAxes, verticalalignment="bottom"
                             )
 
             # Set plot labels and legend
@@ -290,138 +305,7 @@ class SensorTab(ctk.CTkFrame):
         # Show confirmation popup
         messagebox.showinfo("Plot Data", f"Data from {filename} has been plotted!")
 
-    # def interpolate_limits(self, pressure):
-    #     """
-    #     Interpolate the min and max allowable voltages for a given pressure.
-    #     Use the LUT to calculate limits based on the percentage difference applied to the average sensor value.
-    #     """
-    #     if pressure < self.lut_pressure[0] or pressure > self.lut_pressure[-1]:
-    #         return None, None
 
-    #     for i in range(len(self.lut_pressure) - 1):
-    #         if self.lut_pressure[i] <= pressure <= self.lut_pressure[i + 1]:
-    #             # Determine the multiplication factor based on the pressure
-    #             if pressure < 5E-2:  # Pressure less than 0.05 mbar
-    #                 multiplication_factor = 5
-    #             else:  # Pressure greater than or equal to 0.05 mbar
-    #                 multiplication_factor = 7.5
-
-    #             # Calculate the min and max limits for the two closest pressures
-    #             min_limit_1 = self.lut_average[i] * (1 - self.percentage_differences[i] * multiplication_factor)
-    #             max_limit_1 = self.lut_average[i] * (1 + self.percentage_differences[i] * multiplication_factor)
-    #             min_limit_2 = self.lut_average[i + 1] * (1 - self.percentage_differences[i + 1] * multiplication_factor)
-    #             max_limit_2 = self.lut_average[i + 1] * (1 + self.percentage_differences[i + 1] * multiplication_factor)
-
-    #             # Interpolate the min and max limits for the given pressure
-    #             min_limit = min_limit_1 + (min_limit_2 - min_limit_1) * (pressure - self.lut_pressure[i]) / (self.lut_pressure[i + 1] - self.lut_pressure[i])
-    #             max_limit = max_limit_1 + (max_limit_2 - max_limit_1) * (pressure - self.lut_pressure[i]) / (self.lut_pressure[i + 1] - self.lut_pressure[i])
-
-    #             return min_limit, max_limit
-
-    #     return None, None
-
-    # def update_graph(self, frame, ser_manager, update_active, logging_var, file_manager):
-    #     """
-    #     Update the sensor graph with new data from the serial manager.
-    #     """
-    #     try:
-    #         # Read data from the serial manager
-    #         with ser_manager.serial_lock:
-    #             if ser_manager.ser and ser_manager.ser.in_waiting > 0:
-    #                 raw_data = ser_manager.ser.readline().decode('utf-8').strip()
-    #                 print(f"Debug: Received data: {raw_data}")
-
-    #                 # Parse the data
-    #                 data_parts = raw_data.split(",")
-    #                 if len(data_parts) != 9:
-    #                     print("Error: Invalid data format received.")
-    #                     return
-
-    #                 # Extract sensor voltages and pressure
-    #                 sensor_voltages = [(float(value) / 300) * 1000 for value in data_parts[:8]]  # Convert volts to millivolts
-    #                 pressure = float(data_parts[8])  # Pressure remains unchanged
-
-    #                 # Update each sensor's plot
-    #                 for i in range(8):
-    #                     self.x_data[i].append(pressure)
-    #                     self.y_data[i].append(sensor_voltages[i])
-
-    #                     # Separate pass and fail points
-    #                     pass_x = []
-    #                     pass_y = []
-    #                     fail_x = []
-    #                     fail_y = []
-
-    #                     for j, (x, y) in enumerate(zip(self.x_data[i], self.y_data[i])):
-    #                         min_limit, max_limit = self.interpolate_limits(x)
-    #                         if min_limit is not None and max_limit is not None:
-    #                             if y < min_limit or y > max_limit:
-    #                                 fail_x.append(x)
-    #                                 fail_y.append(y)
-    #                             else:
-    #                                 pass_x.append(x)
-    #                                 pass_y.append(y)
-    #                         else:
-    #                             pass_x.append(x)
-    #                             pass_y.append(y)
-
-    #                     # Update the plot
-    #                     ax = self.tabview.tab(f"Sensor {i + 1}").ax
-
-    #                     # Save current zoom level
-    #                     xlim = ax.get_xlim()
-    #                     ylim = ax.get_ylim()
-
-    #                     ax.clear()
-
-    #                     # Re-plot LUT data
-    #                     ax.plot(self.lut_pressure, self.lut_average, label="LUT Average", color="red", linestyle="-")
-
-    #                     # Plot precomputed logistic limit lines
-    #                     ax.plot(self.lut_pressure, self.upper_limits, label="Upper Limit", color="green", linestyle="--")
-    #                     ax.plot(self.lut_pressure, self.lower_limits, label="Lower Limit", color="green", linestyle="--")
-
-    #                     # Plot pass points
-    #                     ax.scatter(pass_x, pass_y, label=f"Sensor {i + 1} Pass", color="blue", marker="o")
-
-    #                     # Plot fail points only if there are any
-    #                     if fail_x:
-    #                         ax.scatter(fail_x, fail_y, label=f"Sensor {i + 1} Failure", color="purple", marker="o")
-    #                         self.pass_fail_labels[i].set_text("Fail")
-    #                         self.pass_fail_labels[i].set_color("red")
-    #                     else:
-    #                         self.pass_fail_labels[i].set_text("Pass")
-    #                         self.pass_fail_labels[i].set_color("green")
-
-    #                     # Add pass/fail text back to the plot
-    #                     ax.text(
-    #                         0.05, 0.95, self.pass_fail_labels[i].get_text(),
-    #                         color=self.pass_fail_labels[i].get_color(),
-    #                         fontsize=12, transform=ax.transAxes, verticalalignment="top"
-    #                     )
-
-    #                     # Restore zoom level
-    #                     ax.set_xlim(xlim)
-    #                     ax.set_ylim(ylim)
-
-    #                     # Set plot labels and legend
-    #                     ax.set_title(f"Sensor {i + 1}: Voltage vs Pressure", fontsize=14)
-    #                     ax.set_xlabel("Gauge Pressure [mbar]", fontsize=12)
-    #                     ax.set_ylabel("Sensor Voltage [mV]", fontsize=12)
-    #                     ax.set_xscale("log")
-    #                     ax.legend()
-
-    #                     # Redraw the canvas
-    #                     self.tabview.tab(f"Sensor {i + 1}").canvas.draw()
-
-    #                 # Save the data to a CSV file if logging is enabled
-    #                 if logging_var.get():
-    #                     data_row = sensor_voltages + [pressure]
-    #                     file_manager.save_to_csv(file_manager.filename_var.get(), data_row, logging_var.get())
-
-    #     except Exception as e:
-    #         print(f"Error updating graph: {e}")
-    
     def process_serial_data(self, raw_data, logging_var, file_manager):
         """
         Process raw data received from the serial port and dynamically update the plots.
@@ -488,26 +372,40 @@ class SensorTab(ctk.CTkFrame):
                         legend_texts.append(f"Sensor {i + 1} Fail")
                         ax.legend(legend_texts)
 
+                   
                 # Check if pressure is <= 2.5E-5 mbar and capture Vout
                 if 0 < pressure <= 2.5E-5:  # Ensure pressure is greater than 0
-                    if not hasattr(self, f"captured_voltage_{i}"):  # Capture voltage once
-                        captured_voltage = voltage
-                        setattr(self, f"captured_voltage_{i}", captured_voltage)
+                     # Check the selected mode
+                    mode = self.file_manager.mode_var.get()  # Get the selected mode
+                    if mode == "Gauge Tube": 
+                        if not hasattr(self, f"captured_voltage_{i}"):  # Capture voltage once
+                            captured_voltage = voltage
+                            setattr(self, f"captured_voltage_{i}", captured_voltage)
 
-                        # Get resistor values
-                        resistor_values = self.get_resistor_values(captured_voltage)
-                        if resistor_values:
-                            r9, r10 = resistor_values
-                            print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} mV, R9 = {r9} ohm, R10 = {r10}")
+                            # Get resistor values
+                            resistor_values = self.get_resistor_values(captured_voltage)
+                            if resistor_values:
+                                r9, r10 = resistor_values
+                                print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} mV, R9 = {r9} ohm, R10 = {r10}")
+                                ax.text(
+                                    0.05, 0.05, f"Vout = {captured_voltage:.2f} mV\nR9 = {r9} Ω\nR10 = {r10}",
+                                    color="blue", fontsize=10, transform=ax.transAxes, verticalalignment="bottom"
+                                )
+                            else:
+                                print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} mV is out of range!")
+                                ax.text(
+                                    0.05, 0.05, f"Vout = {captured_voltage:.2f} mV\nOut of Range!",
+                                    color="red", fontsize=10, transform=ax.transAxes, verticalalignment="bottom"
+                                )
+                    elif mode == "Pressure Sensor Assembly":
+                    # Print Vout on the plot
+                        if not hasattr(self, f"captured_voltage_{i}"):  # Capture voltage once
+                            captured_voltage = (voltage/1000)*300
+                            setattr(self, f"captured_voltage_{i}", captured_voltage)
+                            print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} V")
                             ax.text(
-                                0.05, 0.85, f"Vout = {captured_voltage:.2f} mV\nR9 = {r9} Ω\nR10 = {r10}",
-                                color="blue", fontsize=10, transform=ax.transAxes, verticalalignment="top"
-                            )
-                        else:
-                            print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} mV is out of range!")
-                            ax.text(
-                                0.05, 0.85, f"Vout = {captured_voltage:.2f} mV\nOut of Range!",
-                                color="red", fontsize=10, transform=ax.transAxes, verticalalignment="top"
+                                0.05, 0.05, f"Vout = {captured_voltage:.2f} V",
+                                color="blue", fontsize=10, transform=ax.transAxes, verticalalignment="bottom"
                             )
 
                 # Redraw only the updated canvas

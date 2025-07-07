@@ -46,6 +46,18 @@ class SettingsTab(ctk.CTkFrame):
         self.theme_option_menu.set("Dark")  # Default to dark mode
         self.theme_option_menu.grid(row=7, column=0, padx=20, pady=10, sticky="n")
 
+        # Add a mode toggle switch
+        self.mode_label = ctk.CTkLabel(content_frame, text="Mode:", font=ctk.CTkFont(size=14))
+        self.mode_label.grid(row=8, column=0, padx=20, pady=(20, 5), sticky="n")
+
+        self.mode_toggle = ctk.CTkOptionMenu(
+            content_frame,
+            values=["Gauge Tube", "Pressure Sensor Assembly"],
+            variable=self.file_manager.mode_var,
+            command=self.update_mode
+        )
+        self.mode_toggle.grid(row=9, column=0, padx=20, pady=10, sticky="n")
+
     def save_settings(self):
         """
         Save the settings to the file manager.
@@ -84,3 +96,10 @@ class SettingsTab(ctk.CTkFrame):
         Change the appearance mode of the application.
         """
         ctk.set_appearance_mode(new_theme)
+
+    def update_mode(self, new_mode):
+        """
+        Update the mode in the file manager and save to settings.ini.
+        """
+        self.file_manager.mode_var.set(new_mode)
+        self.file_manager.save_settings(self.logging_var.get())
