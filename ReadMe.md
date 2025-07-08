@@ -1,0 +1,1 @@
+If not already, install Arduino application. Launch the application with the test hardware connected - this will install the required drivers.

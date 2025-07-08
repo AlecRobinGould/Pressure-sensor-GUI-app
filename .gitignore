@@ -14,6 +14,7 @@
 !LUT of gauge tubes.csv
 !settings.ini
 !dependencies.txt
+!ReadMe.md
 
 # Allow the Logs folder but not its contents
 !Logs/
