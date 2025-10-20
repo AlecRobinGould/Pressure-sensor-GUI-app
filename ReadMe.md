@@ -1,4 +1,7 @@
-If not already, install Arduino application. Launch the application with the test hardware connected - this will install the required drivers.
+# Release instructions
+
+ - Ensure main.exe is in a folder along with the lookup table and settings file.
+ - If not already, install Arduino application. Launch the application with the test hardware connected - this will install the required drivers.
 
 Some screenshots:
 <img width="1188" height="714" alt="Start test screenshot" src="https://github.com/user-attachments/assets/a045c693-7df8-4426-af0b-07572e19c6c3" />
