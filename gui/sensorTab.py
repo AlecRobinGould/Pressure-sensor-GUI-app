@@ -187,22 +187,24 @@ class SensorTab(ctk.CTkFrame):
 
                 processed_data = []
                 for i in range(8):  # Loop through each sensor
-                    x_data = pressure_data
-                    y_data = sensor_data.iloc[:, i].tolist()
-
-                    # Separate pass and fail points
+                    x_data = []
+                    y_data = []
                     pass_x = []
                     pass_y = []
                     fail_x = []
                     fail_y = []
 
-                    for x, y in zip(x_data, y_data):
-                        if self.check_point_within_limits(x, y):
-                            pass_x.append(x)
-                            pass_y.append(y)
+                    for p, v in zip(pressure_data, sensor_data.iloc[:, i].tolist()):
+                        if p == 0 or v is None or np.isnan(v):
+                            continue  # skip invalid rows, just like serial
+                        x_data.append(p)
+                        y_data.append(v)
+                        if self.check_point_within_limits(p, v):
+                            pass_x.append(p)
+                            pass_y.append(v)
                         else:
-                            fail_x.append(x)
-                            fail_y.append(y)
+                            fail_x.append(p)
+                            fail_y.append(v)
 
                     processed_data.append((x_data, y_data, pass_x, pass_y, fail_x, fail_y))
 
@@ -287,9 +289,18 @@ class SensorTab(ctk.CTkFrame):
                             captured_voltage = (voltage/1000)*300
                             setattr(self, f"captured_voltage_{i}", captured_voltage)
                             print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} V")
+                            # Determine pass/fail based on Vout range
+                            if 2.97 <= round(captured_voltage,2) <= 3.03:
+                                status_text = "Pass"
+                                status_color = "green"
+                            else:
+                                status_text = "Fail"
+                                status_color = "red"
+
+                            print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} V ({status_text})")
                             ax.text(
-                                0.05, 0.05, f"Vout = {captured_voltage:.4f} V",
-                                color="blue", fontsize=10, transform=ax.transAxes, verticalalignment="bottom"
+                                0.05, 0.05, f"Vout = {captured_voltage:.4f} V\n{status_text}",
+                                color=status_color, fontsize=10, transform=ax.transAxes, verticalalignment="bottom"
                             )
 
             # Set plot labels and legend
@@ -403,9 +414,18 @@ class SensorTab(ctk.CTkFrame):
                             captured_voltage = (voltage/1000)*300
                             setattr(self, f"captured_voltage_{i}", captured_voltage)
                             print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} V")
+                            # Determine pass/fail based on Vout range
+                            if 2.97 <= round(captured_voltage,2) <= 3.03:
+                                status_text = "Pass"
+                                status_color = "green"
+                            else:
+                                status_text = "Fail"
+                                status_color = "red"
+
+                            print(f"Sensor {i + 1}: Vout = {captured_voltage:.2f} V ({status_text})")
                             ax.text(
-                                0.05, 0.05, f"Vout = {captured_voltage:.2f} V",
-                                color="blue", fontsize=10, transform=ax.transAxes, verticalalignment="bottom"
+                                0.05, 0.05, f"Vout = {captured_voltage:.4f} V\n{status_text}",
+                                color=status_color, fontsize=10, transform=ax.transAxes, verticalalignment="bottom"
                             )
 
                 # Redraw only the updated canvas
