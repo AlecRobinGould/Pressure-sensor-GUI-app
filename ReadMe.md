@@ -3,6 +3,10 @@
  - Ensure main.exe is in a folder along with the lookup table and settings file.
  - If not already, install Arduino application. Launch the application with the test hardware connected - this will install the required drivers.
 
+<img width="781" height="773" alt="image" src="https://github.com/user-attachments/assets/04c04bde-962a-416b-8f3e-f8e5558cdaf3" />
+
+<img width="940" height="787" alt="image" src="https://github.com/user-attachments/assets/628994e3-ee39-4235-823f-99a8ca99547b" />
+
 Some screenshots:
 <img width="1188" height="714" alt="Start test screenshot" src="https://github.com/user-attachments/assets/a045c693-7df8-4426-af0b-07572e19c6c3" />
 <img width="1195" height="729" alt="Pass plot screenshot" src="https://github.com/user-attachments/assets/eb4308eb-f84c-486f-8784-2b9730b33ddb" />
