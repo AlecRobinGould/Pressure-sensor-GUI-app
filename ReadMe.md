@@ -3,6 +3,9 @@
  - Ensure main.exe is in a folder along with the lookup table and settings file.
  - If not already, install Arduino application. Launch the application with the test hardware connected - this will install the required drivers.
 
+# Embeded system firmware and electronics:
+[Link to firmware](https://github.com/AlecRobinGould/Pressure-sensor-test-firmware/tree/master)
+
 # Photos and testing setups:
 <img width="781" height="773" alt="image" src="https://github.com/user-attachments/assets/04c04bde-962a-416b-8f3e-f8e5558cdaf3" />
 
